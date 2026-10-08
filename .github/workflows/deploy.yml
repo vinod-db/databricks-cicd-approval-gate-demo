@@ -1,0 +1,37 @@
+name: Deploy (governed change → approval gate → production)
+
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+
+jobs:
+  # Runs on every PR and every merge: proves the change is valid before it can ship.
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: databricks/setup-cli@main
+      - name: Validate the bundle
+        run: databricks bundle validate -t prod
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+
+  # Only after merge to main — and only after a human approves the "production"
+  # environment — does the change reach Unity Catalog. Deployed by a service
+  # principal, so no person creates prod objects by hand.
+  deploy-prod:
+    needs: validate
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment: production      # ⛔ required-reviewer gate: pauses here until approved
+    steps:
+      - uses: actions/checkout@v4
+      - uses: databricks/setup-cli@main
+      - name: Deploy to production
+        run: databricks bundle deploy -t prod
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}

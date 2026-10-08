@@ -1,0 +1,4 @@
+# The "design-doc approved" step: changes to the governed definitions require
+# review from the data-governance owners before they can merge.
+* @vinod-db
+databricks.yml @vinod-db

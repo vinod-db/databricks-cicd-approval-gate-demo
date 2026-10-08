@@ -1,0 +1,28 @@
+# Governed change → approval gate → production (Databricks Asset Bundle)
+# A change to this file only reaches production after a human approves the deploy.
+bundle:
+  name: cicd_approval_gate_demo
+
+targets:
+  prod:
+    mode: production
+    default: true
+    # host comes from the DATABRICKS_HOST env/secret in CI (kept out of source)
+    run_as:
+      service_principal_name: 88014b86-2873-4684-935e-931ec54e1936
+
+# The governed data assets, declared as code. `databricks bundle deploy` creates/updates
+# these in Unity Catalog — and (via the workflow) only after the approval gate.
+resources:
+  schemas:
+    demo:
+      catalog_name: vc_catalog
+      name: cicd_demo
+      comment: "Governed demo schema — every change ships only after a human approval in CI/CD. (v1)"
+  volumes:
+    reference_data:
+      catalog_name: vc_catalog
+      schema_name: cicd_demo
+      name: reference_data
+      volume_type: MANAGED
+      comment: "Reference-data volume, created via the approved pipeline."
